@@ -30,7 +30,7 @@ jobs:
       - name: 4. 리뷰 스크립트 실행 (Gemini 호출)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: node script/review.js
+        run: node script/review.mjs
 
       - name: 5. PR에 리뷰 댓글 달기
         env:

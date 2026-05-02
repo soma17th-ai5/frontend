@@ -1,5 +1,5 @@
-// script/review.js
-const fs = require("fs");
+// script/review.mjs
+import fs from "node:fs";
 
 async function runReview() {
   const apiKey = process.env.GEMINI_API_KEY;
