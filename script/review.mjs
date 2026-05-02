@@ -1,8 +1,15 @@
-// script/review.mjs
 import fs from "node:fs";
 
 async function runReview() {
   const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    console.error(
+      "🚨 에러: GEMINI_API_KEY 환경 변수가 없습니다. GitHub Secrets를 확인해주세요.",
+    );
+    process.exit(1);
+  }
+
   const prDiff = fs.readFileSync("pr_diff.txt", "utf-8");
   const styleGuide = fs.readFileSync(".github/styleguide.md", "utf-8");
 
@@ -11,7 +18,6 @@ async function runReview() {
     return;
   }
 
-  // 제미나이에게 보낼 프롬프트 조립
   const prompt = `
     당신은 시니어 프론트엔드 개발자입니다. 다음 스타일 가이드를 엄격히 지켜서 아래 변경된 코드를 리뷰해주세요.
     
@@ -22,7 +28,6 @@ async function runReview() {
     ${prDiff}
   `;
 
-  // Gemini API 호출 (최신 1.5 Pro 모델 사용)
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
     {
@@ -35,10 +40,20 @@ async function runReview() {
   );
 
   const data = await response.json();
-  const reviewComment = data.candidates[0].content.parts[0].text;
 
-  // 리뷰 결과를 텍스트 파일로 저장 (GitHub Actions에서 댓글로 달기 위함)
+  // 💡 [추가된 부분] API 응답이 실패했을 때 에러 내용을 상세히 출력
+  if (!response.ok || !data.candidates) {
+    console.error("🚨 제미나이 API 호출 실패!");
+    console.error("상태 코드:", response.status);
+    console.error("상세 에러 내용:", JSON.stringify(data, null, 2));
+    process.exit(1); // 강제 종료하여 Actions 실패(빨간불) 처리
+  }
+
+  const reviewComment = data.candidates[0].content.parts[0].text;
   fs.writeFileSync("review_result.txt", reviewComment);
 }
 
-runReview().catch(console.error);
+runReview().catch((error) => {
+  console.error("🚨 스크립트 실행 중 예기치 못한 에러 발생:", error);
+  process.exit(1);
+});
