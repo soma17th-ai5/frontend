@@ -1,7 +1,7 @@
 # Gemini Code Reviewer Configuration
 
 model:
-  name: "gemini-1.5-pro" # 또는 현재 사용하는 모델명
+  name: "gemini-3.1-preview" # 또는 현재 사용하는 모델명
   temperature: 0.2 # 창의성보다는 일관되고 엄격한 리뷰를 위해 낮게 설정
   max_output_tokens: 2048
 
