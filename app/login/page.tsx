@@ -1,14 +1,17 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
 import {
   ArrowRight,
   Bot,
   CalendarCheck,
+  Loader2,
   MessagesSquare,
   Sparkles,
+  TriangleAlert,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
+import { GoogleIcon } from "@/components/ui/GoogleIcon";
 
 const FEATURE_BULLETS = [
   {
@@ -29,8 +32,33 @@ const FEATURE_BULLETS = [
 ];
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isSubmitting) return;
+
+    setError(null);
+
+    if (!email.trim() || !password.trim()) {
+      setError("이메일과 비밀번호를 모두 입력해 주세요.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // TODO(api): 실제 인증 API 연동 시 fetch/Server Action 호출로 교체.
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      router.push("/chat");
+    } catch {
+      setError("로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <main className="grid min-h-dvh grid-cols-1 bg-white lg:grid-cols-[1.05fr_1fr]">
@@ -107,7 +135,8 @@ export default function LoginPage() {
 
           <button
             type="button"
-            className="mt-8 flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+            disabled={isSubmitting}
+            className="mt-8 flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <GoogleIcon className="h-5 w-5" />
             Google 계정으로 계속하기
@@ -119,12 +148,7 @@ export default function LoginPage() {
             <div className="h-px flex-1 bg-slate-200" />
           </div>
 
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-            }}
-          >
+          <form className="space-y-4" onSubmit={handleSubmit} noValidate>
             <div className="space-y-1.5">
               <label
                 htmlFor="email"
@@ -138,8 +162,9 @@ export default function LoginPage() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="name@swmaestro.kr"
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50"
                 autoComplete="email"
+                disabled={isSubmitting}
               />
             </div>
 
@@ -164,18 +189,39 @@ export default function LoginPage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50"
                 autoComplete="current-password"
+                disabled={isSubmitting}
               />
             </div>
 
-            <Link
-              href="/chat"
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+            {error && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
+              >
+                <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
             >
-              로그인하고 시작하기
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  로그인 중…
+                </>
+              ) : (
+                <>
+                  로그인하고 시작하기
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
           </form>
 
           <p className="mt-6 text-center text-xs text-slate-500">
@@ -190,21 +236,5 @@ export default function LoginPage() {
         </div>
       </section>
     </main>
-  );
-}
-
-function GoogleIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path
-        fill="#EA4335"
-        d="M12 10.2v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.9 3.4 14.7 2.4 12 2.4 6.9 2.4 2.7 6.5 2.7 11.7s4.2 9.3 9.3 9.3c5.4 0 8.9-3.8 8.9-9.1 0-.6-.07-1.1-.16-1.7H12z"
-      />
-    </svg>
   );
 }
