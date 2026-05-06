@@ -1,3 +1,5 @@
+import type { ActionResult } from "@/lib/types/action";
+
 export type SourceTone = "neutral" | "warm";
 
 export type ChatSource = {
@@ -69,6 +71,12 @@ export type ChatMessage =
     }
   | {
       id: string;
+      role: "agent";
+      kind: "action_result";
+      results: ActionResult[];
+    }
+  | {
+      id: string;
       role: "system";
       kind: "status";
       text: string;
@@ -122,12 +130,63 @@ export const MOCK_MESSAGES: ChatMessage[] = [
     },
   },
   {
-    id: "s-1",
-    role: "system",
-    kind: "status",
-    text: "신청 완료",
-    detail:
-      "‘마이크로서비스 아키텍처 설계’ 멘토링 신청이 완료되었고, Google Calendar에 등록되었습니다.",
+    id: "ar-1",
+    role: "agent",
+    kind: "action_result",
+    results: [
+      {
+        actionType: "MENTORING_APPLY",
+        status: "success",
+        message:
+          "‘마이크로서비스 아키텍처 설계’ 멘토링 신청이 완료되었어요. 시작 30분 전 알림이 발송됩니다.",
+        data: {
+          application: {
+            applySn: 480231,
+            qustnrSn: 9912,
+            mentoringId: "m-1",
+            title: "마이크로서비스 아키텍처 설계",
+            sessionStartedAt: "2026-05-08T05:00:00Z",
+          },
+          calendarInvite: {
+            status: "created",
+            eventId: "5d2f1c80-0b34-4f5a-9f84-1e5bf8ab1234",
+          },
+        },
+        traceId: "trc-2026-05-06-0001",
+      },
+    ],
+  },
+  {
+    id: "u-1b",
+    role: "user",
+    text: "데이터베이스 멘토링도 신청해줘",
+  },
+  {
+    id: "ar-2",
+    role: "agent",
+    kind: "action_result",
+    results: [
+      {
+        actionType: "MENTORING_APPLY",
+        status: "success",
+        message:
+          "‘데이터베이스 최적화 실전’ 멘토링 신청은 완료됐어요.",
+        data: {
+          application: {
+            applySn: 480255,
+            qustnrSn: 9924,
+            mentoringId: "m-2",
+            title: "데이터베이스 최적화 실전",
+            sessionStartedAt: "2026-05-10T01:00:00Z",
+          },
+          calendarInvite: {
+            status: "failed",
+            errorMessage: "Calendar API rate limit exceeded (HTTP 429)",
+          },
+        },
+        traceId: "trc-2026-05-06-0002",
+      },
+    ],
   },
   {
     id: "u-2",

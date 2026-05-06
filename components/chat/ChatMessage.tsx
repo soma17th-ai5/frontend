@@ -1,6 +1,7 @@
 import { Bot } from "lucide-react";
 import type { ChatMessage as ChatMessageType } from "@/lib/mockChat";
 import { SourceChip } from "@/components/ui/SourceChip";
+import { ActionResultBanner } from "@/components/chat/ActionResultBanner";
 import { MentoringCard } from "@/components/chat/MentoringCard";
 import { NoticeBlock } from "@/components/chat/NoticeBlock";
 import { WebexThread } from "@/components/chat/WebexThread";
@@ -59,7 +60,18 @@ export function ChatMessage({ message }: { message: ChatMessageType }) {
           </div>
         )}
 
-        {message.source && (
+        {message.kind === "action_result" && (
+          <div className="space-y-2">
+            {message.results.map((result, index) => (
+              <ActionResultBanner
+                key={`${result.actionType}-${result.data?.application?.applySn ?? index}`}
+                result={result}
+              />
+            ))}
+          </div>
+        )}
+
+        {message.kind !== "action_result" && message.source && (
           <div>
             <SourceChip source={message.source} />
           </div>
