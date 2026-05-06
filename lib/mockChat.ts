@@ -1,13 +1,6 @@
 import type { ActionResult } from "@/lib/types/action";
-
-export type SourceTone = "neutral" | "warm";
-
-export type ChatSource = {
-  label: string;
-  date: string;
-  href?: string;
-  tone?: SourceTone;
-};
+import type { Source } from "@/lib/types/source";
+import type { WebexSummaryItem } from "@/lib/types/webex";
 
 export type MentoringCardData = {
   id: string;
@@ -24,12 +17,10 @@ export type NoticeItem = {
   text: string;
 };
 
-export type WebexReply = {
+type AgentBase = {
   id: string;
-  author: string;
-  time: string;
-  text: string;
-  badge?: string;
+  role: "agent";
+  sources?: Source[];
 };
 
 export type ChatMessage =
@@ -38,37 +29,25 @@ export type ChatMessage =
       role: "user";
       text: string;
     }
-  | {
-      id: string;
-      role: "agent";
+  | (AgentBase & {
       kind: "text";
       text: string;
-      source?: ChatSource;
-    }
-  | {
-      id: string;
-      role: "agent";
+    })
+  | (AgentBase & {
       kind: "mentoring";
       intro: string;
       cards: MentoringCardData[];
-      source?: ChatSource;
-    }
-  | {
-      id: string;
-      role: "agent";
+    })
+  | (AgentBase & {
       kind: "notice";
       intro: string;
       items: NoticeItem[];
-      source?: ChatSource;
-    }
-  | {
-      id: string;
-      role: "agent";
-      kind: "webex";
+    })
+  | (AgentBase & {
+      kind: "webex_summary";
       intro: string;
-      replies: WebexReply[];
-      source?: ChatSource;
-    }
+      items: WebexSummaryItem[];
+    })
   | {
       id: string;
       role: "agent";
@@ -123,11 +102,17 @@ export const MOCK_MESSAGES: ChatMessage[] = [
         status: "closed",
       },
     ],
-    source: {
-      label: "공식 멘토링 시스템",
-      date: "2026.05.01",
-      href: "#",
-    },
+    sources: [
+      {
+        id: "src-mentoring-list",
+        type: "mentoring",
+        title: "공식 멘토링 시스템 — 5월 멘토링 일정",
+        url: "https://www.swmaestro.kr/mentoring",
+        createdAt: "2026-05-01T01:00:00Z",
+        collectedAt: "2026-05-06T08:00:00Z",
+        official: true,
+      },
+    ],
   },
   {
     id: "ar-1",
@@ -169,8 +154,7 @@ export const MOCK_MESSAGES: ChatMessage[] = [
       {
         actionType: "MENTORING_APPLY",
         status: "success",
-        message:
-          "‘데이터베이스 최적화 실전’ 멘토링 신청은 완료됐어요.",
+        message: "‘데이터베이스 최적화 실전’ 멘토링 신청은 완료됐어요.",
         data: {
           application: {
             applySn: 480255,
@@ -203,11 +187,25 @@ export const MOCK_MESSAGES: ChatMessage[] = [
       { id: "n-2", text: "5월 6일(화) 전체 워크숍 - 온라인 참여 필수" },
       { id: "n-3", text: "멘토링 신청 시스템 점검: 5월 4일 22:00-23:00" },
     ],
-    source: {
-      label: "공식 공지사항",
-      date: "2026.04.30",
-      href: "#",
-    },
+    sources: [
+      {
+        id: "src-notice-week",
+        type: "notice",
+        title: "이번 주 주요 공지 모음",
+        url: "https://www.swmaestro.kr/notice/2026-05",
+        createdAt: "2026-04-30T05:00:00Z",
+        collectedAt: "2026-05-06T08:00:00Z",
+        official: true,
+      },
+      {
+        id: "src-notice-pdf",
+        type: "notice_pdf",
+        title: "5월 워크숍 안내 (PDF)",
+        url: "https://www.swmaestro.kr/files/workshop-2026-05.pdf",
+        createdAt: "2026-04-29T10:00:00Z",
+        official: true,
+      },
+    ],
   },
   {
     id: "u-3",
@@ -217,28 +215,98 @@ export const MOCK_MESSAGES: ChatMessage[] = [
   {
     id: "a-3",
     role: "agent",
-    kind: "webex",
-    intro: "Webex 공유 스페이스에서 ‘배포’ 관련 대화 2건을 찾았습니다:",
-    replies: [
+    kind: "webex_summary",
+    intro: "Webex 공유 스페이스에서 ‘배포’ 관련 대화를 룸별로 정리했어요:",
+    items: [
       {
-        id: "w-1",
-        author: "이지훈",
-        time: "4월 29일 15:42",
-        text: "“AWS 배포 시 환경변수 설정 주의하세요. .env 파일 깃에 안 올라가게…”",
+        id: "ws-1",
+        roomId: "r-be",
+        roomName: "SOMA 5기 · 백엔드 채널",
+        topic: "AWS 배포 시 환경변수 관리",
+        summary:
+          ".env 파일이 깃에 올라가지 않도록 .gitignore 점검 + Secrets Manager 쪽으로 옮기자는 의견. 임시 토큰 노출 사례가 있어 모두 재발급 권장.",
+        messageCount: 8,
+        participants: ["이지훈", "김서현", "박준영"],
+        startedAt: "2026-04-29T06:30:00Z",
+        endedAt: "2026-04-29T06:55:00Z",
+        highlights: [
+          {
+            id: "h-1",
+            author: "이지훈",
+            text: "AWS 배포 시 환경변수 설정 주의하세요. .env 파일 깃에 안 올라가게 .gitignore 한 번 더 봐주세요.",
+            createdAt: "2026-04-29T06:42:00Z",
+          },
+          {
+            id: "h-2",
+            author: "박준영",
+            text: "기존 토큰은 유출 가능성 있으니 일괄 재발급 권장합니다.",
+            createdAt: "2026-04-29T06:48:00Z",
+          },
+        ],
+        rawRefs: ["webex://room/r-be/messages/abc123"],
       },
       {
-        id: "w-2",
-        author: "김서현",
-        time: "4월 28일 10:15",
-        text: "“Docker 배포 가이드 공유합니다 👉 [링크]”",
+        id: "ws-2",
+        roomId: "r-be",
+        roomName: "SOMA 5기 · 백엔드 채널",
+        topic: "Docker 배포 가이드 정리",
+        summary:
+          "Compose 기반 로컬 ↔ ECR + ECS 운영 환경 분리 가이드 공유. 이미지 태깅 컨벤션은 git short SHA + env 접두어로 통일.",
+        messageCount: 5,
+        participants: ["김서현", "이지훈"],
+        startedAt: "2026-04-28T01:10:00Z",
+        endedAt: "2026-04-28T01:35:00Z",
+        highlights: [
+          {
+            id: "h-3",
+            author: "김서현",
+            text: "Docker 배포 가이드 공유합니다 👉 [링크]",
+            createdAt: "2026-04-28T01:15:00Z",
+          },
+        ],
+        rawRefs: ["webex://room/r-be/messages/def456"],
+      },
+      {
+        id: "ws-3",
+        roomId: "r-general",
+        roomName: "SOMA 5기 · 일반 채널",
+        topic: "5월 워크숍 배포 데모 일정 조율",
+        summary:
+          "워크숍에서 라이브 배포 데모를 진행할지 논의. 5월 6일 오후에 시연 30분 + Q&A 15분으로 잠정 확정.",
+        messageCount: 12,
+        participants: ["운영진", "이지훈", "최민호", "이서연"],
+        startedAt: "2026-04-30T05:00:00Z",
+        endedAt: "2026-04-30T05:45:00Z",
+        highlights: [
+          {
+            id: "h-4",
+            author: "운영진",
+            text: "워크숍 라이브 데모는 5/6 14:30~15:15로 잠정합니다. 변경 시 채널 공지할게요.",
+            createdAt: "2026-04-30T05:32:00Z",
+          },
+        ],
       },
     ],
-    source: {
-      label: "Webex 공유 스페이스",
-      date: "2026.04.29",
-      href: "#",
-      tone: "warm",
-    },
+    sources: [
+      {
+        id: "src-webex-room-be",
+        type: "webex_summary",
+        title: "SOMA 5기 · 백엔드 채널 — 배포 관련 클러스터",
+        createdAt: "2026-04-29T07:00:00Z",
+        collectedAt: "2026-05-06T08:00:00Z",
+        official: false,
+        rawRef: "webex://room/r-be",
+      },
+      {
+        id: "src-webex-room-general",
+        type: "webex_summary",
+        title: "SOMA 5기 · 일반 채널 — 워크숍 데모",
+        createdAt: "2026-04-30T06:00:00Z",
+        collectedAt: "2026-05-06T08:00:00Z",
+        official: false,
+        rawRef: "webex://room/r-general",
+      },
+    ],
   },
 ];
 
