@@ -1,3 +1,5 @@
+"use client";
+
 import {
   CalendarDays,
   ExternalLink,
@@ -9,6 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useMemo } from "react";
 import {
   formatAbsoluteTime,
   formatRelativeTime,
@@ -68,7 +71,8 @@ export function SourceChip({ source }: { source: Source }) {
   const tone = OFFICIAL_BADGE[String(source.official) as "true" | "false"];
   const TypeIcon = TYPE_ICON[source.type] ?? Link2;
   const isLink = Boolean(source.url);
-  const tooltip = buildTooltip(source);
+  // source 참조가 바뀔 때만 tooltip 문자열 재계산 (파생 상태).
+  const tooltip = useMemo(() => buildTooltip(source), [source]);
 
   const content = (
     <>

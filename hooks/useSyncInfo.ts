@@ -78,17 +78,16 @@ export function useSyncInfo(
     triggerRef.current = () => {
       if (cancelled) return;
       if (timer) clearTimeout(timer);
-      timer = setTimeout(tick, 0);
+      void tick();
     };
 
-    // 첫 실행은 macrotask 큐에 올려 effect 동기 setState 회피.
-    timer = setTimeout(tick, 0);
+    void tick();
 
     const onVisibility = () => {
       if (cancelled) return;
       if (document.visibilityState === "visible") {
         if (timer) clearTimeout(timer);
-        timer = setTimeout(tick, 0);
+        void tick();
       }
     };
     document.addEventListener("visibilitychange", onVisibility);

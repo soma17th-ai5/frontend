@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Hash,
   MessagesSquare,
@@ -5,6 +7,7 @@ import {
   TriangleAlert,
   Users,
 } from "lucide-react";
+import { useMemo } from "react";
 import {
   formatAbsoluteTime,
   formatRelativeTime,
@@ -21,7 +24,8 @@ type Props = {
 };
 
 export function WebexSummary({ items }: Props) {
-  const groups = groupWebexByRoom(items);
+  // items 참조가 바뀔 때만 룸별 그룹핑 비용을 다시 치름 (파생 상태).
+  const groups = useMemo(() => groupWebexByRoom(items), [items]);
 
   return (
     <div className="space-y-3">

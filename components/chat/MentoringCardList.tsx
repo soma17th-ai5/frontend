@@ -1,6 +1,5 @@
 "use client";
 
-import { TriangleAlert, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
@@ -9,21 +8,16 @@ import {
 } from "@/components/chat/MentoringCard";
 import { ApiError } from "@/lib/api";
 import { executeAction } from "@/lib/api/actions";
+import { useChatMessages } from "@/lib/contexts/ChatMessagesContext";
 import {
   type MentoringCard,
   type MentoringStatus,
 } from "@/lib/types/mentoring";
-import type { ActionType } from "@/lib/types/action";
+import type { ActionResult, ActionType } from "@/lib/types/action";
 
 type Pending =
   | { actionType: "MENTORING_APPLY"; card: MentoringCard }
   | { actionType: "MENTORING_CANCEL"; card: MentoringCard };
-
-type ResultBanner = {
-  tone: "success" | "error";
-  title: string;
-  detail: string;
-} | null;
 
 type LocalStatusMap = Record<string, MentoringCardLocalStatus>;
 
@@ -69,27 +63,50 @@ function describeError(cause: unknown): string {
   return "알 수 없는 오류가 발생했어요.";
 }
 
-function nextStatusAfterSuccess(
-  actionType: ActionType,
-): MentoringStatus {
+function nextStatusAfterSuccess(actionType: ActionType): MentoringStatus {
   return actionType === "MENTORING_APPLY" ? "applied" : "open";
 }
 
+// 실패 시 백엔드가 ActionResult 를 직접 안 줄 수 있어, 클라이언트에서 같은 모양으로 합성한다.
+// 이 합성 결과는 ChatMessagesContext.appendMessage 를 통해 채팅 흐름에 action_result 메시지로 들어간다.
+function buildSyntheticFailureResult(
+  pending: Pending,
+  cause: unknown,
+): ActionResult {
+  const code =
+    cause instanceof ApiError && cause.code ? cause.code : "ACTION_FAILED";
+  const status = cause instanceof ApiError ? cause.status : undefined;
+  return {
+    actionType: pending.actionType,
+    status: "failed",
+    message:
+      pending.actionType === "MENTORING_APPLY"
+        ? `‘${pending.card.title}’ 멘토링 신청에 실패했어요.`
+        : `‘${pending.card.title}’ 신청 취소에 실패했어요.`,
+    error: {
+      code,
+      message: describeError(cause),
+      // 4xx 클라이언트 오류는 통상 재시도 무의미, 5xx 는 재시도 가능.
+      recoverable: typeof status === "number" ? status >= 500 : true,
+    },
+    traceId: "",
+  };
+}
+
 export function MentoringCardList({ items }: { items: MentoringCard[] }) {
+  const messagesCtx = useChatMessages();
+
   const [statusMap, setStatusMap] = useState<LocalStatusMap>(() =>
     buildInitialStatusMap(items),
   );
   const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState(false);
-  const [resultBanner, setResultBanner] = useState<ResultBanner>(null);
 
   const handleApply = useCallback((card: MentoringCard) => {
-    setResultBanner(null);
     setPending({ actionType: "MENTORING_APPLY", card });
   }, []);
 
   const handleCancelClick = useCallback((card: MentoringCard) => {
-    setResultBanner(null);
     setPending({ actionType: "MENTORING_CANCEL", card });
   }, []);
 
@@ -108,7 +125,7 @@ export function MentoringCardList({ items }: { items: MentoringCard[] }) {
     }));
 
     try {
-      await executeAction({
+      const result = await executeAction({
         actionType: pending.actionType,
         payload: {
           mentoringId: pending.card.id,
@@ -117,35 +134,35 @@ export function MentoringCardList({ items }: { items: MentoringCard[] }) {
         },
       });
 
+      // 카드 상태 동기화는 클라이언트가 책임 — 서버가 status 를 포함하지 않을 수 있음.
       const finalStatus = nextStatusAfterSuccess(pending.actionType);
       setStatusMap((prev) => ({ ...prev, [pending.card.id]: finalStatus }));
-      setResultBanner({
-        tone: "success",
-        title:
-          pending.actionType === "MENTORING_APPLY"
-            ? "신청이 완료됐어요"
-            : "신청을 취소했어요",
-        detail: pending.card.title,
+
+      // 채팅 흐름에 action_result 메시지로 결과를 영속화 (히스토리 보존).
+      messagesCtx?.appendMessage({
+        id: `ar-${pending.card.id}-${Date.now()}`,
+        role: "agent",
+        kind: "action_result",
+        results: [result],
       });
-      setPending(null);
     } catch (cause) {
+      // 카드 상태는 원복.
       setStatusMap((prev) => ({
         ...prev,
         [pending.card.id]: pending.card.status as MentoringCardLocalStatus,
       }));
-      setResultBanner({
-        tone: "error",
-        title:
-          pending.actionType === "MENTORING_APPLY"
-            ? "신청에 실패했어요"
-            : "취소에 실패했어요",
-        detail: describeError(cause),
+
+      messagesCtx?.appendMessage({
+        id: `ar-${pending.card.id}-${Date.now()}`,
+        role: "agent",
+        kind: "action_result",
+        results: [buildSyntheticFailureResult(pending, cause)],
       });
-      setPending(null);
     } finally {
       setBusy(false);
+      setPending(null);
     }
-  }, [pending]);
+  }, [pending, messagesCtx]);
 
   const dialogCopy = useMemo(() => {
     if (!pending) return null;
@@ -167,35 +184,6 @@ export function MentoringCardList({ items }: { items: MentoringCard[] }) {
 
   return (
     <div className="space-y-3">
-      {resultBanner && (
-        <div
-          role={resultBanner.tone === "error" ? "alert" : "status"}
-          className={`flex items-start gap-2 rounded-xl border px-3 py-2 text-xs ${
-            resultBanner.tone === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border-rose-200 bg-rose-50 text-rose-800"
-          }`}
-        >
-          {resultBanner.tone === "error" ? (
-            <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          ) : (
-            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold">{resultBanner.title}</p>
-            <p className="mt-0.5 opacity-80">{resultBanner.detail}</p>
-          </div>
-          <button
-            type="button"
-            aria-label="결과 알림 닫기"
-            onClick={() => setResultBanner(null)}
-            className="-mr-1 -mt-1 rounded p-0.5 opacity-60 transition hover:opacity-100"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </div>
-      )}
-
       <ul className="space-y-3">
         {items.map((card) => (
           <li key={card.id}>

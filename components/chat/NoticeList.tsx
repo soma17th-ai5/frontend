@@ -1,3 +1,5 @@
+"use client";
+
 import {
   ExternalLink,
   FileText,
@@ -8,6 +10,7 @@ import {
   Pin,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useMemo } from "react";
 import {
   formatAbsoluteTime,
   formatRelativeTime,
@@ -46,10 +49,14 @@ const CATEGORY_TONE: Record<NoticeCategory, string> = {
 };
 
 export function NoticeList({ items }: { items: NoticeCard[] }) {
-  if (!items || items.length === 0) return null;
+  // items 참조가 바뀔 때만 정렬 비용을 다시 치름 (파생 상태).
+  const sorted = useMemo(() => sortNotices(items ?? []), [items]);
+  const pinnedCount = useMemo(
+    () => sorted.filter((item) => item.pinned).length,
+    [sorted],
+  );
 
-  const sorted = sortNotices(items);
-  const pinnedCount = sorted.filter((item) => item.pinned).length;
+  if (!items || items.length === 0) return null;
 
   return (
     <section

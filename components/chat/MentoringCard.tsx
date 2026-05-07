@@ -9,6 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import { ActionButton } from "@/components/ui/ActionButton";
+import { formatMentoringSchedule } from "@/lib/relativeTime";
 import {
   type MentoringCard as MentoringCardType,
   getCapacityRatio,
@@ -56,31 +57,6 @@ const STATUS_BADGE: Record<MentoringCardLocalStatus, StatusBadgeStyle> = {
     label: "취소 처리 중",
   },
 };
-
-function formatSchedule(start: string, end?: string) {
-  const startDate = new Date(start);
-  if (Number.isNaN(startDate.getTime())) return start;
-  const date = startDate.toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    weekday: "short",
-  });
-  const startTime = startDate.toLocaleTimeString("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  if (!end) return `${date} ${startTime}`;
-  const endDate = new Date(end);
-  if (Number.isNaN(endDate.getTime())) return `${date} ${startTime}`;
-  const endTime = endDate.toLocaleTimeString("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  return `${date} · ${startTime} – ${endTime}`;
-}
 
 function CapacityBar({ card }: { card: MentoringCardType }) {
   if (!card.capacity) return null;
@@ -217,7 +193,12 @@ export function MentoringCard({ card, status, onApply, onCancel }: Props) {
 
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
-          <span>{formatSchedule(card.sessionStartedAt, card.sessionEndedAt)}</span>
+          <span>
+            {formatMentoringSchedule(
+              card.sessionStartedAt,
+              card.sessionEndedAt,
+            )}
+          </span>
         </div>
 
         {card.location && (
