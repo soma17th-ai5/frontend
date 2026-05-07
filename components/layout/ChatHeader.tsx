@@ -1,6 +1,7 @@
 "use client";
 
 import { Menu } from "lucide-react";
+import { SyncStatusBadge } from "@/components/sync/SyncStatusBadge";
 
 type Props = {
   onToggleSidebar: () => void;
@@ -26,13 +27,17 @@ export function ChatHeader({ onToggleSidebar }: Props) {
         </div>
       </div>
 
-      <button
-        type="button"
-        className="grid h-9 w-9 place-items-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700 transition hover:bg-blue-200"
-        aria-label="내 프로필"
-      >
-        도
-      </button>
+      <div className="flex items-center gap-3">
+        <SyncStatusBadge />
+
+        <button
+          type="button"
+          className="grid h-9 w-9 place-items-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700 transition hover:bg-blue-200"
+          aria-label="내 프로필"
+        >
+          도
+        </button>
+      </div>
     </header>
   );
 }

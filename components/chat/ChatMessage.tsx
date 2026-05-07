@@ -1,9 +1,10 @@
 import { Bot } from "lucide-react";
 import type { ChatMessage as ChatMessageType } from "@/lib/mockChat";
-import { SourceChip } from "@/components/ui/SourceChip";
-import { MentoringCard } from "@/components/chat/MentoringCard";
-import { NoticeBlock } from "@/components/chat/NoticeBlock";
-import { WebexThread } from "@/components/chat/WebexThread";
+import { ActionResultBanner } from "@/components/chat/ActionResultBanner";
+import { MentoringCardList } from "@/components/chat/MentoringCardList";
+import { NoticeList } from "@/components/chat/NoticeList";
+import { SourceList } from "@/components/chat/SourceList";
+import { WebexSummary } from "@/components/chat/WebexSummary";
 import { StatusToast } from "@/components/chat/StatusToast";
 
 export function ChatMessage({ message }: { message: ChatMessageType }) {
@@ -37,33 +38,40 @@ export function ChatMessage({ message }: { message: ChatMessageType }) {
         {message.kind === "mentoring" && (
           <div className="space-y-3 rounded-2xl rounded-tl-md bg-white p-4 shadow-sm ring-1 ring-slate-200">
             <p className="text-sm text-slate-800">{message.intro}</p>
-            <div className="space-y-3">
-              {message.cards.map((card) => (
-                <MentoringCard key={card.id} card={card} />
-              ))}
-            </div>
+            <MentoringCardList items={message.cards} />
           </div>
         )}
 
         {message.kind === "notice" && (
           <div className="space-y-3 rounded-2xl rounded-tl-md bg-white p-4 shadow-sm ring-1 ring-slate-200">
             <p className="text-sm text-slate-800">{message.intro}</p>
-            <NoticeBlock items={message.items} />
+            <NoticeList items={message.items} />
           </div>
         )}
 
-        {message.kind === "webex" && (
+        {message.kind === "webex_summary" && (
           <div className="space-y-3 rounded-2xl rounded-tl-md bg-white p-4 shadow-sm ring-1 ring-slate-200">
             <p className="text-sm text-slate-800">{message.intro}</p>
-            <WebexThread replies={message.replies} />
+            <WebexSummary items={message.items} />
           </div>
         )}
 
-        {message.source && (
-          <div>
-            <SourceChip source={message.source} />
+        {message.kind === "action_result" && (
+          <div className="space-y-2">
+            {message.results.map((result, index) => (
+              <ActionResultBanner
+                key={`${result.actionType}-${result.data?.application?.applySn ?? index}`}
+                result={result}
+              />
+            ))}
           </div>
         )}
+
+        {message.kind !== "action_result" &&
+          message.sources &&
+          message.sources.length > 0 && (
+            <SourceList sources={message.sources} />
+          )}
       </div>
     </div>
   );
