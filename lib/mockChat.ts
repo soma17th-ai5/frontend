@@ -1,21 +1,8 @@
 import type { ActionResult } from "@/lib/types/action";
+import type { MentoringCard } from "@/lib/types/mentoring";
+import type { NoticeCard } from "@/lib/types/notice";
 import type { Source } from "@/lib/types/source";
 import type { WebexSummaryItem } from "@/lib/types/webex";
-
-export type MentoringCardData = {
-  id: string;
-  title: string;
-  mentor: string;
-  tag: string;
-  date: string;
-  time: string;
-  status: "open" | "closed";
-};
-
-export type NoticeItem = {
-  id: string;
-  text: string;
-};
 
 type AgentBase = {
   id: string;
@@ -36,12 +23,12 @@ export type ChatMessage =
   | (AgentBase & {
       kind: "mentoring";
       intro: string;
-      cards: MentoringCardData[];
+      cards: MentoringCard[];
     })
   | (AgentBase & {
       kind: "notice";
       intro: string;
-      items: NoticeItem[];
+      items: NoticeCard[];
     })
   | (AgentBase & {
       kind: "webex_summary";
@@ -77,28 +64,53 @@ export const MOCK_MESSAGES: ChatMessage[] = [
       {
         id: "m-1",
         title: "마이크로서비스 아키텍처 설계",
-        mentor: "박준영 멘토",
-        tag: "백엔드",
-        date: "2026년 5월 8일",
-        time: "14:00 - 15:30",
+        mentor: { name: "박준영 멘토", organization: "Coupang" },
+        tags: ["백엔드", "아키텍처"],
+        description:
+          "도메인 분리, 이벤트 기반 통신, 보일러플레이트 줄이는 패턴을 1시간 30분 동안 깊게 다룹니다.",
+        sessionStartedAt: "2026-05-08T05:00:00Z",
+        sessionEndedAt: "2026-05-08T06:30:00Z",
+        location: { type: "online" },
+        capacity: { current: 8, max: 12 },
         status: "open",
       },
       {
         id: "m-2",
         title: "데이터베이스 최적화 실전",
-        mentor: "이서연 멘토",
-        tag: "백엔드",
-        date: "2026년 5월 10일",
-        time: "10:00 - 11:30",
-        status: "open",
+        mentor: { name: "이서연 멘토", organization: "Naver" },
+        tags: ["백엔드", "DB"],
+        description:
+          "쿼리 플랜 분석, 인덱스 설계, 통계 갱신 전략까지 사례 기반으로 풀어 드려요.",
+        sessionStartedAt: "2026-05-10T01:00:00Z",
+        sessionEndedAt: "2026-05-10T02:30:00Z",
+        location: { type: "offline", place: "강남캠퍼스 4층 멘토링룸" },
+        capacity: { current: 11, max: 12 },
+        status: "applied",
+        applySn: 480255,
+        qustnrSn: 9924,
       },
       {
         id: "m-3",
-        title: "Spring Boot 심화",
-        mentor: "최민호 멘토",
-        tag: "백엔드",
-        date: "2026년 5월 7일",
-        time: "16:00 - 17:00",
+        title: "Spring Boot 심화 — 운영 트러블슈팅",
+        mentor: { name: "최민호 멘토" },
+        tags: ["백엔드", "Spring"],
+        description:
+          "장애 회고와 메모리 누수 트러블슈팅 케이스 스터디. 신청 인원이 가득 찼습니다.",
+        sessionStartedAt: "2026-05-07T07:00:00Z",
+        sessionEndedAt: "2026-05-07T08:00:00Z",
+        location: { type: "online" },
+        capacity: { current: 12, max: 12 },
+        status: "open",
+      },
+      {
+        id: "m-4",
+        title: "분산 시스템 입문",
+        mentor: { name: "한지윤 멘토", organization: "Kakao" },
+        tags: ["백엔드", "시스템"],
+        sessionStartedAt: "2026-05-05T07:00:00Z",
+        sessionEndedAt: "2026-05-05T08:30:00Z",
+        location: { type: "online" },
+        capacity: { current: 12, max: 12 },
         status: "closed",
       },
     ],
@@ -183,9 +195,69 @@ export const MOCK_MESSAGES: ChatMessage[] = [
     kind: "notice",
     intro: "이번 주 주요 공지사항입니다:",
     items: [
-      { id: "n-1", text: "5월 3일(토) 중간평가 발표 자료 제출 마감" },
-      { id: "n-2", text: "5월 6일(화) 전체 워크숍 - 온라인 참여 필수" },
-      { id: "n-3", text: "멘토링 신청 시스템 점검: 5월 4일 22:00-23:00" },
+      {
+        id: "n-1",
+        title: "[필독] 5월 3일(토) 중간평가 발표 자료 제출 마감",
+        author: "운영진",
+        createdAt: "2026-05-04T01:00:00Z",
+        url: "https://www.swmaestro.kr/notice/2026-05-03-mid-eval",
+        summary:
+          "발표 자료는 PDF 또는 PPTX 형식으로 5월 3일 23:59까지 OpenSoma 자료실에 업로드해 주세요. 양식과 평가 기준을 첨부에서 확인할 수 있습니다.",
+        category: "평가",
+        pinned: true,
+        unread: true,
+        attachments: [
+          {
+            id: "a-1",
+            type: "pdf",
+            name: "중간평가_발표양식_v3.pdf",
+            url: "https://www.swmaestro.kr/files/mid-eval-template.pdf",
+            sizeBytes: 1_240_000,
+          },
+          {
+            id: "a-2",
+            type: "doc",
+            name: "평가루브릭.docx",
+            sizeBytes: 320_000,
+          },
+        ],
+      },
+      {
+        id: "n-2",
+        title: "5월 6일(화) 전체 워크숍 — 온라인 참여 필수",
+        author: "워크숍 TF",
+        createdAt: "2026-05-02T08:00:00Z",
+        url: "https://www.swmaestro.kr/notice/2026-05-workshop",
+        summary:
+          "전체 워크숍은 14:00에 시작합니다. 참여 링크와 운영 가이드는 별첨된 안내 PDF를 참고해 주세요. 라이브 데모 시간이 포함되어 있습니다.",
+        category: "워크숍",
+        unread: true,
+        attachments: [
+          {
+            id: "a-3",
+            type: "pdf",
+            name: "5월_워크숍_안내.pdf",
+            url: "https://www.swmaestro.kr/files/workshop-2026-05.pdf",
+            sizeBytes: 2_800_000,
+          },
+          {
+            id: "a-4",
+            type: "link",
+            name: "Webex 참여 링크",
+            url: "https://swmaestro.webex.com/meet/workshop",
+          },
+        ],
+      },
+      {
+        id: "n-3",
+        title: "멘토링 신청 시스템 점검: 5월 4일 22:00–23:00",
+        author: "시스템 운영팀",
+        createdAt: "2026-04-30T02:00:00Z",
+        url: "https://www.swmaestro.kr/notice/sysmaint-2026-05-04",
+        summary:
+          "점검 시간 동안에는 OpenSoma 멘토링 신청/취소가 일시 중단됩니다. SomaAgent에서도 신청 액션이 일시적으로 실패할 수 있으니 양해 부탁드립니다.",
+        category: "시스템",
+      },
     ],
     sources: [
       {
