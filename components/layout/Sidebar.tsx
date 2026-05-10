@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus, Search, X } from "lucide-react";
+import { useAuth } from "@/lib/contexts/AuthContext";
 import { MOCK_HISTORY } from "@/lib/mockChat";
 
 type Props = {
@@ -9,6 +10,8 @@ type Props = {
 };
 
 export function Sidebar({ open, onClose }: Props) {
+  const { user } = useAuth();
+
   return (
     <>
       {open && (
@@ -75,8 +78,10 @@ export function Sidebar({ open, onClose }: Props) {
         </nav>
 
         <div className="border-t border-slate-200 px-4 py-3 text-xs text-slate-500">
-          <p className="font-semibold text-slate-700">SOMA 5기 · 김도완</p>
-          <p>AI 생활 비서 · 베타</p>
+          <p className="font-semibold text-slate-700">
+            {user ? `${user.userName} (${user.role})` : "로그인 필요"}
+          </p>
+          <p>{user ? `${user.somaUserId}` : "AI 생활 비서 · 베타"}</p>
         </div>
       </aside>
     </>

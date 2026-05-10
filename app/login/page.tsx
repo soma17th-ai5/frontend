@@ -10,8 +10,8 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
-import { GoogleIcon } from "@/components/ui/GoogleIcon";
+import { useEffect, useState, type FormEvent } from "react";
+import { useAuth } from "@/lib/contexts/AuthContext";
 
 const FEATURE_BULLETS = [
   {
@@ -33,10 +33,16 @@ const FEATURE_BULLETS = [
 
 export default function LoginPage() {
   const router = useRouter();
+  const { status, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 이미 로그인된 상태로 /login에 들어오면 자동 진입.
+  useEffect(() => {
+    if (status === "authenticated") router.replace("/chat");
+  }, [status, router]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -44,18 +50,25 @@ export default function LoginPage() {
 
     setError(null);
 
-    if (!email.trim() || !password.trim()) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
       setError("이메일과 비밀번호를 모두 입력해 주세요.");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // TODO(api): 실제 인증 API 연동 시 fetch/Server Action 호출로 교체.
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      router.push("/chat");
-    } catch {
-      setError("로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      // 백엔드 /auth/login 의 username 필드에 SOMA 이메일을 그대로 전달.
+      await login({ username: trimmedEmail, password });
+      // SPEC §1.2 — 비밀번호는 즉시 메모리에서 폐기.
+      setPassword("");
+      router.replace("/chat");
+    } catch (cause) {
+      const message =
+        cause instanceof Error
+          ? cause.message
+          : "로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+      setError(message);
       setIsSubmitting(false);
     }
   };
@@ -133,28 +146,13 @@ export default function LoginPage() {
             SOMA 계정으로 로그인하면 멘토링·공지·Webex 데이터에 바로 연결돼요.
           </p>
 
-          <button
-            type="button"
-            disabled={isSubmitting}
-            className="mt-8 flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <GoogleIcon className="h-5 w-5" />
-            Google 계정으로 계속하기
-          </button>
-
-          <div className="my-6 flex items-center gap-3 text-xs text-slate-400">
-            <div className="h-px flex-1 bg-slate-200" />
-            또는 이메일로 로그인
-            <div className="h-px flex-1 bg-slate-200" />
-          </div>
-
-          <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+          <form className="mt-8 space-y-4" onSubmit={handleSubmit} noValidate>
             <div className="space-y-1.5">
               <label
                 htmlFor="email"
                 className="text-xs font-medium text-slate-600"
               >
-                이메일
+                SOMA 이메일
               </label>
               <input
                 id="email"
@@ -164,25 +162,18 @@ export default function LoginPage() {
                 placeholder="name@swmaestro.kr"
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50"
                 autoComplete="email"
+                inputMode="email"
                 disabled={isSubmitting}
               />
             </div>
 
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label
-                  htmlFor="password"
-                  className="text-xs font-medium text-slate-600"
-                >
-                  비밀번호
-                </label>
-                <button
-                  type="button"
-                  className="text-xs font-medium text-blue-600 hover:text-blue-700"
-                >
-                  비밀번호를 잊으셨나요?
-                </button>
-              </div>
+              <label
+                htmlFor="password"
+                className="text-xs font-medium text-slate-600"
+              >
+                비밀번호
+              </label>
               <input
                 id="password"
                 type="password"
@@ -225,13 +216,7 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-6 text-center text-xs text-slate-500">
-            아직 계정이 없으신가요?{" "}
-            <button
-              type="button"
-              className="font-semibold text-blue-600 hover:text-blue-700"
-            >
-              사용 신청하기
-            </button>
+            로그인은 SOMA 공식 계정으로만 진행됩니다.
           </p>
         </div>
       </section>

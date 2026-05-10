@@ -1,13 +1,38 @@
 "use client";
 
-import { Menu } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { SyncStatusBadge } from "@/components/sync/SyncStatusBadge";
+import { useAuth } from "@/lib/contexts/AuthContext";
 
 type Props = {
   onToggleSidebar: () => void;
 };
 
+function initialOf(name: string | undefined): string {
+  if (!name) return "?";
+  const trimmed = name.trim();
+  if (!trimmed) return "?";
+  return trimmed.slice(0, 1);
+}
+
 export function ChatHeader({ onToggleSidebar }: Props) {
+  const router = useRouter();
+  const { user, logout } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await logout();
+      router.replace("/login");
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
   return (
     <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
       <div className="flex items-center gap-3">
@@ -30,12 +55,30 @@ export function ChatHeader({ onToggleSidebar }: Props) {
       <div className="flex items-center gap-3">
         <SyncStatusBadge />
 
+        {user && (
+          <div className="hidden text-right text-xs leading-tight sm:block">
+            <p className="font-semibold text-slate-700">{user.userName}</p>
+            <p className="text-slate-400">{user.somaUserId}</p>
+          </div>
+        )}
+
         <button
           type="button"
-          className="grid h-9 w-9 place-items-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700 transition hover:bg-blue-200"
-          aria-label="내 프로필"
+          className="grid h-9 w-9 place-items-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700"
+          aria-label={user ? `${user.userName} 프로필` : "내 프로필"}
         >
-          도
+          {initialOf(user?.userName)}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+          aria-label="로그아웃"
+          title="로그아웃"
+        >
+          <LogOut className="h-4 w-4" />
         </button>
       </div>
     </header>

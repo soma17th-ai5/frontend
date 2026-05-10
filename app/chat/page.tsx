@@ -1,11 +1,13 @@
 "use client";
 
-import { CircleHelp } from "lucide-react";
-import { useState } from "react";
+import { CircleHelp, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ChatContainer } from "@/components/chat/ChatContainer";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { ChatHeader } from "@/components/layout/ChatHeader";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { useAuth } from "@/lib/contexts/AuthContext";
 import {
   ChatMessagesProvider,
   useChatMessages,
@@ -19,7 +21,24 @@ function ChatBoard() {
 }
 
 export default function ChatPage() {
+  const router = useRouter();
+  const { status } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (status === "unauthenticated") router.replace("/login");
+  }, [status, router]);
+
+  if (status !== "authenticated") {
+    return (
+      <main className="grid min-h-dvh place-items-center bg-slate-100 text-slate-500">
+        <div className="flex items-center gap-2 text-sm">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          세션 확인 중…
+        </div>
+      </main>
+    );
+  }
 
   return (
     <ChatMessagesProvider initialMessages={MOCK_MESSAGES}>
