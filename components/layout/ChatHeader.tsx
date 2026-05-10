@@ -6,6 +6,9 @@ import { useState } from "react";
 import { SyncStatusBadge } from "@/components/sync/SyncStatusBadge";
 import { useAuth } from "@/lib/contexts/AuthContext";
 
+/** 임시 OFF: 헤더에서 동기화 배지 미표시(컴포넌트·훅은 유지). 다시 켤 때 true로 변경 */
+const SHOW_SYNC_STATUS_BADGE = false;
+
 type Props = {
   onToggleSidebar: () => void;
 };
@@ -53,7 +56,7 @@ export function ChatHeader({ onToggleSidebar }: Props) {
       </div>
 
       <div className="flex items-center gap-3">
-        <SyncStatusBadge />
+        {SHOW_SYNC_STATUS_BADGE ? <SyncStatusBadge /> : null}
 
         {user && (
           <div className="hidden text-right text-xs leading-tight sm:block">

@@ -2,33 +2,38 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import type { ChatMessage } from "@/lib/mockChat";
+import type { ThreadMessage } from "@/lib/knowledgeChat";
 
 type ChatMessagesContextValue = {
-  messages: ChatMessage[];
-  appendMessage: (message: ChatMessage) => void;
+  messages: ThreadMessage[];
+  appendMessage: (message: ThreadMessage) => void;
+  replaceMessages: (messages: ThreadMessage[]) => void;
 };
 
 const ChatMessagesContext = createContext<ChatMessagesContextValue | null>(null);
 
 type ProviderProps = {
-  initialMessages: ChatMessage[];
+  initialMessages?: ThreadMessage[];
   children: ReactNode;
 };
 
 export function ChatMessagesProvider({
-  initialMessages,
+  initialMessages = [],
   children,
 }: ProviderProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  const [messages, setMessages] = useState<ThreadMessage[]>(initialMessages);
 
-  const appendMessage = useCallback((message: ChatMessage) => {
+  const appendMessage = useCallback((message: ThreadMessage) => {
     setMessages((prev) => [...prev, message]);
   }, []);
 
+  const replaceMessages = useCallback((next: ThreadMessage[]) => {
+    setMessages(next);
+  }, []);
+
   const value = useMemo(
-    () => ({ messages, appendMessage }),
-    [messages, appendMessage],
+    () => ({ messages, appendMessage, replaceMessages }),
+    [messages, appendMessage, replaceMessages],
   );
 
   return (
@@ -38,8 +43,6 @@ export function ChatMessagesProvider({
   );
 }
 
-// 컨텍스트 미사용 (예: 단독 시연 페이지) 환경에서도 컴포넌트가 죽지 않도록 nullable 반환.
-// 호출자는 반환값이 null 일 때 fallback 동작을 결정한다.
 export function useChatMessages(): ChatMessagesContextValue | null {
   return useContext(ChatMessagesContext);
 }

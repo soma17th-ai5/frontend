@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic, Paperclip, SendHorizontal } from "lucide-react";
+import { SendHorizontal } from "lucide-react";
 import {
   type ChangeEvent,
   type KeyboardEvent,
@@ -11,12 +11,13 @@ import {
 
 type Props = {
   onSend?: (value: string) => void;
+  disabled?: boolean;
 };
 
-export function ChatInput({ onSend }: Props) {
+export function ChatInput({ onSend, disabled = false }: Props) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const canSend = value.trim().length > 0;
+  const canSend = value.trim().length > 0 && !disabled;
 
   const adjustHeight = useCallback(() => {
     const node = textareaRef.current;
@@ -47,31 +48,16 @@ export function ChatInput({ onSend }: Props) {
   return (
     <div className="border-t border-slate-200 bg-white/80 px-4 py-3 backdrop-blur sm:px-6">
       <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
-        <button
-          type="button"
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-          aria-label="첨부 파일 추가"
-        >
-          <Paperclip className="h-4 w-4" />
-        </button>
-
         <textarea
           ref={textareaRef}
           value={value}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           rows={1}
-          placeholder="무엇을 도와드릴까요?"
-          className="chat-input-textarea max-h-40 min-h-[1.75rem] flex-1 resize-none border-0 bg-transparent px-1 py-1 text-sm leading-6 text-slate-800 placeholder:text-slate-400 focus:outline-none"
+          placeholder="지식 베이스에 질문해 보세요."
+          disabled={disabled}
+          className="chat-input-textarea max-h-40 min-h-[1.75rem] flex-1 resize-none border-0 bg-transparent px-1 py-1 text-sm leading-6 text-slate-800 placeholder:text-slate-400 focus:outline-none disabled:opacity-60"
         />
-
-        <button
-          type="button"
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-          aria-label="음성으로 입력"
-        >
-          <Mic className="h-4 w-4" />
-        </button>
 
         <button
           type="button"
