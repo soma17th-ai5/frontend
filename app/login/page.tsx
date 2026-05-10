@@ -69,6 +69,9 @@ export default function LoginPage() {
           ? cause.message
           : "로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.";
       setError(message);
+    } finally {
+      // try 본문에서 router.replace 등이 비정상 종료해도 버튼이 잠긴 상태로
+      // 고착되지 않도록 항상 false로 복구한다.
       setIsSubmitting(false);
     }
   };
