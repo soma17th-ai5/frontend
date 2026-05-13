@@ -1,17 +1,9 @@
 "use client";
 
-import { LogOut, Menu } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { SyncStatusBadge } from "@/components/sync/SyncStatusBadge";
 import { useAuth } from "@/lib/contexts/AuthContext";
-
-/** 임시 OFF: 헤더에서 동기화 배지 미표시(컴포넌트·훅은 유지). 다시 켤 때 true로 변경 */
-const SHOW_SYNC_STATUS_BADGE = false;
-
-type Props = {
-  onToggleSidebar: () => void;
-};
 
 function initialOf(name: string | undefined): string {
   if (!name) return "?";
@@ -20,7 +12,7 @@ function initialOf(name: string | undefined): string {
   return trimmed.slice(0, 1);
 }
 
-export function ChatHeader({ onToggleSidebar }: Props) {
+export function ChatHeader() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -39,14 +31,6 @@ export function ChatHeader({ onToggleSidebar }: Props) {
   return (
     <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onToggleSidebar}
-          className="grid h-9 w-9 place-items-center rounded-lg text-slate-600 transition hover:bg-slate-100 lg:hidden"
-          aria-label="사이드바 열기"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
         <div>
           <p className="text-base font-semibold tracking-tight text-slate-900">
             SomaAgent
@@ -56,8 +40,6 @@ export function ChatHeader({ onToggleSidebar }: Props) {
       </div>
 
       <div className="flex items-center gap-3">
-        {SHOW_SYNC_STATUS_BADGE ? <SyncStatusBadge /> : null}
-
         {user && (
           <div className="hidden text-right text-xs leading-tight sm:block">
             <p className="font-semibold text-slate-700">{user.userName}</p>

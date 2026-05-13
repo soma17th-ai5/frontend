@@ -1,7 +1,7 @@
 // docs/spec/API.md §2.2 ChatUIBlock.notice_list 의 items 타입.
 // 정확한 필드는 sidecar PoC 후 확정 (frontEndSpec §7 F-1).
 // frontEndSpec §3.2 — "내 접수 내역 보여줘"가 notice_list 형태로 재사용될 수도 있음 (F-2).
-// 본 파일은 시연용 잠정 컨트랙트이며, 백엔드 확정 시 본 파일 + mockChat 만 갱신하면 된다.
+// 본 파일은 백엔드 응답을 채팅 UI 목록으로 렌더링하기 위한 임시 컨트랙트다.
 
 export type NoticeAttachmentType =
   | "pdf"
