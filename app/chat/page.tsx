@@ -66,8 +66,8 @@ function ChatBoard() {
       setAwaiting(true);
 
       try {
-        const queryForApi = buildKnowledgeQueryWithContext(priorForContext, text);
-        const data = await askKnowledge({ query: queryForApi }, ac.signal);
+        const messageForApi = buildKnowledgeQueryWithContext(priorForContext, text);
+        const data = await askKnowledge({ message: messageForApi }, ac.signal);
         ctx.appendMessage({
           id: newId("a"),
           role: "assistant",

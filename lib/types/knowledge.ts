@@ -1,4 +1,4 @@
-// docs/features/api/knowledge.md · OpenAPI KnowledgeAskRequest / KnowledgeAskResponse
+// docs/features/api/chat.md · OpenAPI chat request / response
 
 export type KnowledgeSourceType =
   | "NOTICE"
@@ -6,12 +6,8 @@ export type KnowledgeSourceType =
   | "MENTORING"
   | "WEBEX_MESSAGE";
 
-export type KnowledgeAskRequest = {
-  query: string;
-  source_types?: KnowledgeSourceType[] | null;
-  official_only?: boolean;
-  room_name?: string | null;
-  k?: number;
+export type KnowledgeChatRequest = {
+  message: string;
 };
 
 export type KnowledgeSource = {
@@ -27,9 +23,10 @@ export type KnowledgeSource = {
   room_name?: string | null;
 };
 
-export type KnowledgeAskResponse = {
+export type KnowledgeChatResponse = {
   answer: string;
   sources: KnowledgeSource[];
   llm_used: boolean;
   llm_error?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
