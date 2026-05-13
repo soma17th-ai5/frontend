@@ -27,7 +27,12 @@ type Pending =
   | { actionType: "MENTORING_CANCEL"; card: MentoringCard };
 
 type LocalStatusMap = Record<string, MentoringCardLocalStatus>;
-type LocalCardMap = Record<string, MentoringCard>;
+type LocalCardPatch = {
+  status?: MentoringStatus;
+  applySn?: number | null;
+  qustnrSn?: number | null;
+};
+type LocalCardMap = Record<string, LocalCardPatch>;
 
 const ACTION_COPY: Record<
   ActionType,
@@ -49,22 +54,6 @@ const ACTION_COPY: Record<
   },
 };
 
-function buildInitialStatusMap(items: MentoringCard[]): LocalStatusMap {
-  const map: LocalStatusMap = {};
-  for (const item of items) {
-    map[item.id] = item.status as MentoringCardLocalStatus;
-  }
-  return map;
-}
-
-function buildInitialCardMap(items: MentoringCard[]): LocalCardMap {
-  const map: LocalCardMap = {};
-  for (const item of items) {
-    map[item.id] = item;
-  }
-  return map;
-}
-
 function describeError(cause: unknown): string {
   if (cause instanceof ApiError) {
     if (cause.status === 409) {
@@ -81,6 +70,22 @@ function describeError(cause: unknown): string {
 
 function nextStatusAfterSuccess(actionType: ActionType): MentoringStatus {
   return actionType === "MENTORING_APPLY" ? "applied" : "open";
+}
+
+function applyCardPatch(card: MentoringCard, patch?: LocalCardPatch): MentoringCard {
+  if (!patch) return card;
+  const next: MentoringCard = {
+    ...card,
+    status: patch.status ?? card.status,
+  };
+
+  if (patch.applySn === null) delete next.applySn;
+  else if (patch.applySn !== undefined) next.applySn = patch.applySn;
+
+  if (patch.qustnrSn === null) delete next.qustnrSn;
+  else if (patch.qustnrSn !== undefined) next.qustnrSn = patch.qustnrSn;
+
+  return next;
 }
 
 // 실패 시 백엔드가 ActionResult 를 직접 안 줄 수 있어, 클라이언트에서 같은 모양으로 합성한다.
@@ -119,12 +124,8 @@ export function MentoringCardList({
   const messagesCtx = useChatMessages();
   const { user } = useAuth();
 
-  const [statusMap, setStatusMap] = useState<LocalStatusMap>(() =>
-    buildInitialStatusMap(items),
-  );
-  const [cardMap, setCardMap] = useState<LocalCardMap>(() =>
-    buildInitialCardMap(items),
-  );
+  const [statusMap, setStatusMap] = useState<LocalStatusMap>({});
+  const [cardMap, setCardMap] = useState<LocalCardMap>({});
   const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -246,30 +247,25 @@ export function MentoringCardList({
           const finalStatus = nextStatusAfterSuccess(pending.actionType);
           setStatusMap((prev) => ({ ...prev, [pending.card.id]: finalStatus }));
           setCardMap((prev) => {
-            const current = prev[pending.card.id] ?? pending.card;
             if (pending.actionType === "MENTORING_APPLY") {
               const application = result.data?.application;
               return {
                 ...prev,
                 [pending.card.id]: {
-                  ...current,
                   status: "applied",
-                  ...(application
-                    ? {
-                        applySn: application.applySn,
-                        qustnrSn: application.qustnrSn,
-                      }
-                    : {}),
+                  applySn: application?.applySn,
+                  qustnrSn: application?.qustnrSn,
                 },
               };
             }
 
-            const next: MentoringCard = { ...current, status: "open" };
-            delete next.applySn;
-            delete next.qustnrSn;
             return {
               ...prev,
-              [pending.card.id]: next,
+              [pending.card.id]: {
+                status: "open",
+                applySn: null,
+                qustnrSn: null,
+              },
             };
           });
         } else {
@@ -349,7 +345,7 @@ export function MentoringCardList({
     <div className="space-y-3">
       <ul className="space-y-3">
         {items.map((item) => {
-          const card = cardMap[item.id] ?? item;
+          const card = applyCardPatch(item, cardMap[item.id]);
           return (
             <li key={card.id}>
               <MentoringCardComponent
