@@ -75,7 +75,7 @@ export function useApplicationQuickAction() {
         kind: "applications",
         answer:
           cards.length > 0
-            ? `신청 내역 ${cards.length}건을 찾았습니다. 취소하려면 카드의 신청 취소 버튼을 눌러 주세요.`
+            ? `신청, 취소 내역 ${cards.length}건을 찾았습니다.`
             : "현재 신청 내역이 없습니다.",
         cards,
       });
