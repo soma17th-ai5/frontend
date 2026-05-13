@@ -1,7 +1,7 @@
 import type { ActionResult } from "@/lib/types/action";
 import type { KnowledgeSource } from "@/lib/types/knowledge";
 
-/** `/chat` RAG(knowledge/ask) 스레드에 표시되는 메시지. */
+/** `/chat` RAG 스레드에 표시되는 메시지. */
 export type ThreadMessage =
   | { id: string; role: "user"; text: string }
   | {

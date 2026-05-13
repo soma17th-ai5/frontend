@@ -4,7 +4,7 @@ const MAX_PRIOR_TURNS = 3;
 const MAX_ASSISTANT_SNIPPET = 600;
 const MAX_USER_SNIPPET = 400;
 
-/** knowledge/ask에 `candidates_context` 필드가 없어, 이전 턴을 질문 문자열에 포함한다. */
+/** chat 요청에 별도 context 필드가 없어, 이전 턴을 message 문자열에 포함한다. */
 export function buildKnowledgeQueryWithContext(
   priorMessages: ThreadMessage[],
   currentUserText: string,
