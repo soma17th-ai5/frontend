@@ -91,7 +91,7 @@ export default function LoginPage() {
             </span>
             <div>
               <p className="text-lg font-semibold tracking-tight">SomaAgent</p>
-              <p className="text-xs text-white/70">AI 생활 비서 · for SOMA 5th</p>
+              <p className="text-xs text-white/70">AI 생활 비서 · for SOMA 17th</p>
             </div>
           </div>
 
@@ -124,7 +124,7 @@ export default function LoginPage() {
         </ul>
 
         <p className="relative text-xs text-white/60">
-          © {new Date().getFullYear()} SomaAgent. SOMA 5기 임시 디자인 시안.
+          © {new Date().getFullYear()} SomaAgent. SOMA 17기.
         </p>
       </section>
 
