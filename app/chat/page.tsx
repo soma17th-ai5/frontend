@@ -4,9 +4,10 @@ import { CircleHelp, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatContainer } from "@/components/chat/ChatContainer";
-import { ChatInput } from "@/components/chat/ChatInput";
+import { ChatInput, type ChatQuickAction } from "@/components/chat/ChatInput";
 import { ChatHeader } from "@/components/layout/ChatHeader";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { useApplicationQuickAction } from "@/hooks/useApplicationQuickAction";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import {
   ChatMessagesProvider,
@@ -41,12 +42,24 @@ function describeKnowledgeError(cause: unknown): string {
   return "알 수 없는 오류가 발생했습니다.";
 }
 
+const quickActionMessages: Record<Exclude<ChatQuickAction, "applications">, string> = {
+  backend_mentoring: "백엔드 멘토링 찾아줘",
+  planning_mentoring: "기획 멘토링 찾아줘",
+  notices: "최근 공지사항 요약해줘",
+};
+
 function ChatBoard() {
   const ctx = useChatMessages();
   const inflightRef = useRef<AbortController | null>(null);
   const [awaiting, setAwaiting] = useState(false);
+  const {
+    abortApplications,
+    isApplicationsLoading,
+    loadApplications,
+  } = useApplicationQuickAction();
 
   const messages = ctx?.messages ?? [];
+  const isAwaiting = awaiting || isApplicationsLoading;
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -60,6 +73,7 @@ function ChatBoard() {
       };
       ctx.appendMessage(userMessage);
 
+      abortApplications();
       inflightRef.current?.abort();
       const ac = new AbortController();
       inflightRef.current = ac;
@@ -89,7 +103,19 @@ function ChatBoard() {
         setAwaiting(false);
       }
     },
-    [ctx],
+    [abortApplications, ctx],
+  );
+
+  const handleQuickAction = useCallback(
+    (action: ChatQuickAction) => {
+      if (action === "applications") {
+        inflightRef.current?.abort();
+        void loadApplications();
+        return;
+      }
+      void sendMessage(quickActionMessages[action]);
+    },
+    [loadApplications, sendMessage],
   );
 
   useEffect(() => {
@@ -98,8 +124,12 @@ function ChatBoard() {
 
   return (
     <>
-      <ChatContainer messages={messages} isAwaitingAnswer={awaiting} />
-      <ChatInput onSend={sendMessage} disabled={awaiting} />
+      <ChatContainer messages={messages} isAwaitingAnswer={isAwaiting} />
+      <ChatInput
+        onSend={sendMessage}
+        onQuickAction={handleQuickAction}
+        disabled={isAwaiting}
+      />
     </>
   );
 }
