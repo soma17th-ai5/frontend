@@ -45,7 +45,7 @@ function describeKnowledgeError(cause: unknown): string {
   return "알 수 없는 오류가 발생했습니다.";
 }
 
-const QUICK_ACTION_MESSAGE: Record<Exclude<ChatQuickAction, "applications">, string> = {
+const quickActionMessages: Record<Exclude<ChatQuickAction, "applications">, string> = {
   backend_mentoring: "백엔드 멘토링 찾아줘",
   planning_mentoring: "기획 멘토링 찾아줘",
   notices: "최근 공지사항 요약해줘",
@@ -159,7 +159,7 @@ function ChatBoard() {
         void loadApplications();
         return;
       }
-      void sendMessage(QUICK_ACTION_MESSAGE[action]);
+      void sendMessage(quickActionMessages[action]);
     },
     [loadApplications, sendMessage],
   );

@@ -22,7 +22,7 @@ export type ChatQuickAction =
   | "notices"
   | "applications";
 
-const QUICK_ACTIONS: Array<{
+const quickActions: Array<{
   id: ChatQuickAction;
   label: string;
   icon: LucideIcon;
@@ -67,7 +67,7 @@ export function ChatInput({ onSend, onQuickAction, disabled = false }: Props) {
   return (
     <div className="border-t border-slate-200 bg-white/80 px-4 py-3 backdrop-blur sm:px-6">
       <div className="mx-auto mb-2 flex max-w-3xl gap-2 overflow-x-auto pb-1">
-        {QUICK_ACTIONS.map(({ id, label, icon: Icon }) => (
+        {quickActions.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             type="button"
