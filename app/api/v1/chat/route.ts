@@ -15,7 +15,9 @@ export const dynamic = "force-dynamic";
 
 function isKnowledgeChatBody(value: unknown): value is KnowledgeChatRequest {
   if (!value || typeof value !== "object") return false;
-  const message = (value as KnowledgeChatRequest).message;
+  if (!("message" in value)) return false;
+
+  const { message } = value;
   return typeof message === "string" && message.trim().length > 0;
 }
 
