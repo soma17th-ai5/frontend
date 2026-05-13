@@ -206,3 +206,107 @@ applications API 응답에 대한 타입 정의 파일입니다.
 
 - `npm run lint` 통과
 - `npm run build` 통과
+- `npm run build` 통과
+
+---
+
+app/chat/page.tsx (변경)
+채팅 보드 로직이 구현된 페이지 컴포넌트입니다. 빠른 실행 버튼 중 '내 신청내역 조회' 기능을 위한 loadApplications 함수와 handleQuickAction 함수가 추가되었습니다.
+
+[칭찬] 명명 규칙 준수 (quickActionMessages)
+
+내용: quickActionMessages 상수는 컴포넌트 내부에서 사용되는 객체 상수로, 스타일 가이드의 camelCase 명명 규칙을 정확히 따르고 있습니다.
+이유: "Naming Conventions > Variables & Functions: camelCase 사용" 규칙을 준수하여 프로젝트 전체의 명명 일관성을 유지하고, 이름만으로 역할을 명확히 유추할 수 있게 합니다.
+[개선 제안] loadApplications 로직의 Custom Hook 분리 (향후 고려)
+
+[문제점] ChatBoard 컴포넌트 내 loadApplications 함수는 API 호출, 데이터 변환, 채팅 메시지 UI 상태 관리(로딩, 에러 메시지) 등 여러 비즈니스 로직과 UI 렌더링 로직이 결합되어 있습니다. 현재는 허용 가능하나 향후 유사한 빠른 실행 기능이 추가되거나 이 로직이 더 복잡해질 경우 Component Structure: 단일 책임 원칙(SRP)에 위배될 수 있습니다.
+[개선안] 현재 loadApplications와 관련된 newId, describeKnowledgeError, inflightRef, awaiting 등의 상태 및 로직을 하나의 전용 Custom Hook (예: useApplicationQuickAction)으로 캡슐화하는 것을 고려해볼 수 있습니다. 이 Custom Hook은 애플리케이션 조회 로딩 상태와 결과 메시지 처리를 전담하게 됩니다.
+// (예시) useApplicationQuickAction.ts
+import { useCallback, useRef, useState } from "react";
+// ... 필요한 의존성 import (useChatMessages, useAuth, ApiError 등)
+
+function newId(prefix: string) { /_ ... _/ } // 유틸리티 함수도 함께 캡슐화
+function describeKnowledgeError(cause: unknown): string { /_ ... _/ }
+
+export function useApplicationQuickAction() {
+const ctx = useChatMessages();
+const { user } = useAuth();
+const inflightRef = useRef<AbortController | null>(null);
+const [isApplicationsLoading, setIsApplicationsLoading] = useState(false);
+
+const triggerLoadApplications = useCallback(async () => {
+if (!ctx) return;
+
+    inflightRef.current?.abort();
+    const ac = new AbortController();
+    inflightRef.current = ac;
+    setIsApplicationsLoading(true);
+
+    // 사용자 메시지 append
+    ctx.appendMessage({ id: newId("u"), role: "user", text: "내 신청내역 조회" });
+
+    try {
+      if (!user?.somaUserId) {
+        throw new ApiError(401, "로그인 정보가 없어 신청 내역을 조회할 수 없습니다.", { code: "SOMA_AUTH_REQUIRED" });
+      }
+      const data = await fetchApplications({ somaUserId: user.somaUserId }, ac.signal);
+      const cards = applicationItemsToMentoringCards(data.items);
+      ctx.appendMessage({ /* ... assistant message with cards */ });
+    } catch (cause) {
+      if (ac.signal.aborted) return;
+      ctx.appendMessage({ /* ... error message */ });
+    } finally {
+      setIsApplicationsLoading(false);
+    }
+
+}, [ctx, user]);
+
+return { isApplicationsLoading, triggerLoadApplications };
+}
+
+// app/chat/page.tsx 내 ChatBoard 컴포넌트
+function ChatBoard() {
+// ...
+const { isApplicationsLoading, triggerLoadApplications } = useApplicationQuickAction();
+// 기존 awaiting 상태와 새 로딩 상태를 결합
+const awaiting = /_ 기존 sendMessage 로딩 _/ || isApplicationsLoading;
+
+const handleQuickAction = useCallback(
+(action: ChatQuickAction) => {
+if (action === "applications") {
+// Hook 내부에서 abortController를 관리하므로 별도로 생성할 필요 없음
+void triggerLoadApplications();
+return;
+}
+void sendMessage(quickActionMessages[action]);
+},
+[triggerLoadApplications, sendMessage],
+);
+// ...
+}
+[이유] Component Structure: 컴포넌트는 단일 책임 원칙(SRP)을 따름으로써 ChatBoard 컴포넌트는 UI 렌더링 및 여러 기능을 조율하는 역할에 더 집중하고, 특정 기능의 복잡한 로직은 Custom Hook으로 분리하여 가독성과 유지보수성을 향상시킬 수 있습니다. 현재 코드의 기능적 문제는 없지만, 향후 빠른 실행 기능이 추가되거나 loadApplications 로직이 더욱 복잡해질 경우를 대비한 구조 개선안입니다. 현재 sendMessage와 상태를 공유하는 부분 때문에 분리가 복잡할 수 있다는 점은 이해합니다.
+
+---
+
+## 추가 처리 내역
+
+### 반영한 피드백
+
+- `loadApplications` 로직을 `hooks/useApplicationQuickAction.ts` custom hook으로 분리했다.
+- hook이 담당하는 책임:
+  - applications 요청 전용 `AbortController` 관리
+  - applications 요청 로딩 상태 관리
+  - `fetchApplications` 호출
+  - 신청내역 응답을 카드로 변환
+  - `kind: "applications"` 또는 에러 메시지를 채팅 메시지로 append
+
+### 조율 방식
+
+- `ChatBoard`는 일반 채팅 요청과 applications 요청을 조율하는 역할만 남겼다.
+- 일반 채팅을 시작하면 `abortApplications()`로 applications 요청을 중단한다.
+- `내 신청내역 조회`를 시작하면 기존 일반 채팅 요청을 중단한 뒤 `loadApplications()`를 호출한다.
+- 입력창 disabled / 대기 표시에는 `awaiting || isApplicationsLoading`을 사용한다.
+
+### 검증
+
+- `npm run lint` 통과

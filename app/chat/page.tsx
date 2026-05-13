@@ -7,6 +7,7 @@ import { ChatContainer } from "@/components/chat/ChatContainer";
 import { ChatInput, type ChatQuickAction } from "@/components/chat/ChatInput";
 import { ChatHeader } from "@/components/layout/ChatHeader";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { useApplicationQuickAction } from "@/hooks/useApplicationQuickAction";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import {
   ChatMessagesProvider,
@@ -16,10 +17,6 @@ import { askKnowledge } from "@/lib/knowledge";
 import { buildKnowledgeQueryWithContext } from "@/lib/knowledgeContext";
 import type { ThreadMessage } from "@/lib/knowledgeChat";
 import { ApiError } from "@/lib/api";
-import {
-  applicationItemsToMentoringCards,
-  fetchApplications,
-} from "@/lib/applications";
 
 function newId(prefix: string) {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -53,11 +50,16 @@ const quickActionMessages: Record<Exclude<ChatQuickAction, "applications">, stri
 
 function ChatBoard() {
   const ctx = useChatMessages();
-  const { user } = useAuth();
   const inflightRef = useRef<AbortController | null>(null);
   const [awaiting, setAwaiting] = useState(false);
+  const {
+    abortApplications,
+    isApplicationsLoading,
+    loadApplications,
+  } = useApplicationQuickAction();
 
   const messages = ctx?.messages ?? [];
+  const isAwaiting = awaiting || isApplicationsLoading;
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -71,6 +73,7 @@ function ChatBoard() {
       };
       ctx.appendMessage(userMessage);
 
+      abortApplications();
       inflightRef.current?.abort();
       const ac = new AbortController();
       inflightRef.current = ac;
@@ -100,62 +103,13 @@ function ChatBoard() {
         setAwaiting(false);
       }
     },
-    [ctx],
+    [abortApplications, ctx],
   );
-
-  const loadApplications = useCallback(async () => {
-    if (!ctx) return;
-
-    const userMessage: ThreadMessage = {
-      id: newId("u"),
-      role: "user",
-      text: "내 신청내역 조회",
-    };
-    ctx.appendMessage(userMessage);
-
-    inflightRef.current?.abort();
-    const ac = new AbortController();
-    inflightRef.current = ac;
-    setAwaiting(true);
-
-    try {
-      if (!user?.somaUserId) {
-        throw new ApiError(401, "로그인 정보가 없어 신청 내역을 조회할 수 없습니다.", {
-          code: "SOMA_AUTH_REQUIRED",
-        });
-      }
-
-      const data = await fetchApplications(
-        { somaUserId: user.somaUserId },
-        ac.signal,
-      );
-      const cards = applicationItemsToMentoringCards(data.items);
-      ctx.appendMessage({
-        id: newId("apps"),
-        role: "assistant",
-        kind: "applications",
-        answer:
-          cards.length > 0
-            ? `신청 내역 ${cards.length}건을 찾았습니다. 취소하려면 카드의 신청 취소 버튼을 눌러 주세요.`
-            : "현재 신청 내역이 없습니다.",
-        cards,
-      });
-    } catch (cause) {
-      if (ac.signal.aborted) return;
-      ctx.appendMessage({
-        id: newId("e"),
-        role: "assistant",
-        kind: "error",
-        message: describeKnowledgeError(cause),
-      });
-    } finally {
-      setAwaiting(false);
-    }
-  }, [ctx, user]);
 
   const handleQuickAction = useCallback(
     (action: ChatQuickAction) => {
       if (action === "applications") {
+        inflightRef.current?.abort();
         void loadApplications();
         return;
       }
@@ -170,11 +124,11 @@ function ChatBoard() {
 
   return (
     <>
-      <ChatContainer messages={messages} isAwaitingAnswer={awaiting} />
+      <ChatContainer messages={messages} isAwaitingAnswer={isAwaiting} />
       <ChatInput
         onSend={sendMessage}
         onQuickAction={handleQuickAction}
-        disabled={awaiting}
+        disabled={isAwaiting}
       />
     </>
   );
