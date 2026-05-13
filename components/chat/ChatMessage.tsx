@@ -69,6 +69,29 @@ export function ChatMessage({ message }: { message: ThreadMessage }) {
     );
   }
 
+  if (message.role === "assistant" && message.kind === "applications") {
+    return (
+      <div className="flex gap-3">
+        <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-900 text-white">
+          <Bot className="h-4 w-4" />
+        </span>
+        <div className="flex w-full max-w-[82%] flex-col gap-3">
+          <div className="rounded-2xl rounded-tl-md bg-white px-4 py-3 text-sm leading-relaxed text-slate-800 shadow-sm ring-1 ring-slate-200">
+            <p className="whitespace-pre-wrap">{message.answer}</p>
+          </div>
+          {message.cards.length > 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-100">
+              <MentoringCardList
+                items={message.cards}
+                applyMode="openapi_mentoring"
+              />
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   if (message.role === "agent" && message.kind === "action_result") {
     return (
       <div className="flex gap-3">

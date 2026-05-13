@@ -53,6 +53,12 @@ export async function POST(
 
   const cookieStore = await cookies();
   const session = cookieStore.get(SESSION_COOKIE_NAME)?.value ?? null;
+  if (!session) {
+    return Response.json(
+      { code: "SOMA_AUTH_REQUIRED", message: "로그인이 필요합니다." },
+      { status: 401 },
+    );
+  }
 
   try {
     const data = await somaFetch<unknown>(
