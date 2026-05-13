@@ -9,6 +9,18 @@ import { somaFetch, SomaApiError } from "@/lib/server/somaApi";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type ApplyBody = {
+  soma_user_id: string;
+};
+
+function isApplyBody(value: unknown): value is ApplyBody {
+  if (!value || typeof value !== "object") return false;
+  if (!("soma_user_id" in value)) return false;
+
+  const { soma_user_id } = value;
+  return typeof soma_user_id === "string" && soma_user_id.trim().length > 0;
+}
+
 export async function POST(
   request: Request,
   ctx: { params: Promise<{ mentoringId: string }> },
@@ -22,9 +34,9 @@ export async function POST(
     );
   }
 
-  let body: { confirmed?: boolean; soma_user_id?: string };
+  let body: unknown;
   try {
-    body = (await request.json()) as typeof body;
+    body = await request.json();
   } catch {
     return Response.json(
       { code: "INVALID_REQUEST", message: "잘못된 요청 본문입니다." },
@@ -32,11 +44,7 @@ export async function POST(
     );
   }
 
-  if (
-    !body?.soma_user_id ||
-    typeof body.soma_user_id !== "string" ||
-    body.soma_user_id.trim().length === 0
-  ) {
+  if (!isApplyBody(body)) {
     return Response.json(
       { code: "INVALID_REQUEST", message: "soma_user_id가 필요합니다." },
       { status: 400 },
@@ -53,7 +61,6 @@ export async function POST(
         method: "POST",
         sessionId: session,
         json: {
-          confirmed: body.confirmed ?? true,
           soma_user_id: body.soma_user_id.trim(),
         },
       },

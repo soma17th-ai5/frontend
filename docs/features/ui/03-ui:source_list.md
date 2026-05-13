@@ -52,7 +52,6 @@ type SourceType =
   | "mentoring"
   | "application"
   | "webex_message" | "webex_summary"
-  | "calendar"
   | "other";
 
 type Source = {
@@ -86,7 +85,6 @@ type Source = {
 | `mentoring` | `Users` |
 | `application` | `Inbox` |
 | `webex_message`, `webex_summary` | `MessagesSquare` |
-| `calendar` | `CalendarDays` |
 | `other` | `Link2` |
 
 #### 5. 컴포넌트 책임 분리

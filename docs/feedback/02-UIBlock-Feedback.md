@@ -45,7 +45,7 @@ function MentoringCard({ card, status, onApply, onCancel }: Props) {
 // ...
 
 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-<CalendarDays className="h-3.5 w-3.5 text-slate-400" />
+<Clock className="h-3.5 w-3.5 text-slate-400" />
 
 -          <span>{formatSchedule(card.sessionStartedAt, card.sessionEndedAt)}</span>
 

@@ -77,7 +77,7 @@ X-Session-Id:   <대화 세션 UUID, 프론트가 발급해 유지>
 ### 2.5 로그아웃 / 상태 확인
 
 - `POST /api/v1/auth/logout` (헤더 `X-Soma-Session`) → `204 No Content` 후 클라이언트 상태 폐기.
-- `GET /api/v1/auth/status`: 페이지 진입/새로고침 시 세션 유효성 + 외부 연동(opensoma/webex/calendar) 상태 확인. 만료 시 401.
+- `GET /api/v1/auth/status`: 페이지 진입/새로고침 시 세션 유효성 + 외부 연동(opensoma/webex) 상태 확인. 만료 시 401.
 
 ---
 
@@ -132,7 +132,6 @@ API 엔드포인트, `ChatMessage` / `Source` / `ChatUIBlock` / `ActionProposal`
 
 - `requiresConfirmation: false`라도 신청/취소는 반드시 모달 거침 (안전장치)
 - `/actions/execute`는 **자동 재시도 금지** (idempotent 보장 안 됨)
-- 응답 `data.calendarInvite.status === "failed"`면 "신청은 완료됐지만 캘린더 등록 실패" 안내
 - HTTP 409 `ACTION_CONFLICT`는 "이미 신청됨/마감됨" 등 — 모달로 표시
 
 ### 3.4 candidates_context 재전송
@@ -221,7 +220,7 @@ type ChatTurn = {
 | 2   | "백엔드 멘토링 찾아줘"           | `success`               | `mentoring_cards`, `source_list`            |
 | 3   | "내 접수 내역 보여줘"            | `success`               | `notice_list` 형태(접수 카드) 또는 마크다운 |
 | 4-1 | "이거 신청해줘"                  | `success` • `actions[]` | `mentoring_cards` • 액션 버튼               |
-| 4-2 | (확인 클릭) → `/actions/execute` | `success`               | `action_result` (신청 완료 + mock 캘린더)   |
+| 4-2 | (확인 클릭) → `/actions/execute` | `success`               | `action_result` (신청 완료)                 |
 | 5   | "Webex에서 X 얘기 정리해줘"      | `success`               | `webex_summary` (비공식 배너 강제)          |
 
 ---
@@ -266,9 +265,8 @@ type ChatTurn = {
 | --- | -------------------------------------------------------------------------- | ------------------ |
 | F-1 | `MentoringCard` / `NoticeCard` / `WebexSummaryItem` 정확한 필드 스키마     | 컴포넌트 props     |
 | F-2 | `ApplicationHistory` 응답 형태 (전용 UI 블록 신설 vs `notice_list` 재사용) | UI 블록 추가 여부  |
-| F-3 | 캘린더 mock 결과를 `action_result`에 어떻게 담을지                         | 배너 카피          |
-| F-4 | `candidates_context` 최대 크기 제한                                        | 직전 N턴 동봉 정책 |
-| F-5 | 출처 클릭 시 OpenSoma 페이지로의 직접 링크 가능 여부 (인증 필요)           | UX 분기            |
-| F-6 | 세션 만료 시 자동 재시도 정책 (사용자 메시지/액션 보관 기간)               | UX 안전성          |
-| F-7 | `MENTORING_CANCEL` 시 `applySn`/`qustnrSn` 매핑 실패 케이스 처리           | 에러 카피          |
-| F-8 | sync 배지 폴링 주기 / 타임존 표시                                          | P2                 |
+| F-3 | `candidates_context` 최대 크기 제한                                        | 직전 N턴 동봉 정책 |
+| F-4 | 출처 클릭 시 OpenSoma 페이지로의 직접 링크 가능 여부 (인증 필요)           | UX 분기            |
+| F-5 | 세션 만료 시 자동 재시도 정책 (사용자 메시지/액션 보관 기간)               | UX 안전성          |
+| F-6 | `MENTORING_CANCEL` 시 `applySn`/`qustnrSn` 매핑 실패 케이스 처리           | 에러 카피          |
+| F-7 | sync 배지 폴링 주기 / 타임존 표시                                          | P2                 |

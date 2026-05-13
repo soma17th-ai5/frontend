@@ -87,8 +87,7 @@ X-Soma-Session: <session_id>
   },
   "integrations": {
     "opensoma": { "status": "connected" },
-    "webex": { "status": "operator_managed" },
-    "calendar": { "status": "mock" }
+    "webex": { "status": "operator_managed" }
   }
 }
 ```
@@ -150,7 +149,6 @@ type Source = {
     | "application"
     | "webex_message"
     | "webex_summary"
-    | "calendar"
     | "other";
   title: string;
   url?: string;
@@ -235,12 +233,6 @@ type ActionExecutionResponse = {
       title: string;
       sessionStartedAt?: string;
     };
-    calendarInvite?: {
-      // MENTORING_APPLY 부수 결과
-      status: "created" | "skipped" | "failed";
-      eventId?: string; // mock에서는 UUID
-      errorMessage?: string;
-    };
   };
   error?: { code: string; message: string; recoverable: boolean };
   trace_id: string;
@@ -251,7 +243,7 @@ type ActionExecutionResponse = {
 
 | `actionType`       | 페이로드                                                    | 성공 응답 `data`                  |
 | ------------------ | ----------------------------------------------------------- | --------------------------------- |
-| `MENTORING_APPLY`  | `{ mentoringId }`                                           | `{ application, calendarInvite }` |
+| `MENTORING_APPLY`  | `{ mentoringId }`                                           | `{ application }` |
 | `MENTORING_CANCEL` | `{ mentoringId }` 또는 `{ mentoringId, applySn, qustnrSn }` | `{ application: {…cancelled} }`   |
 
 > `MENTORING_CANCEL` 페이로드에 `applySn`/`qustnrSn`이 없으면 백엔드가 사용자 `applications` 캐시에서 자동 매핑 (필요 시 즉시 history 재조회).
@@ -262,8 +254,7 @@ type ActionExecutionResponse = {
 2. `opensoma.mentoring.get`으로 직전 상태 재검증 (닫힘/마감/이미신청 등)
 3. `MENTORING_CANCEL` + payload에 매핑 정보 없으면 `applications` 캐시에서 매핑
 4. 실제 tool 호출 (`opensoma.mentoring.apply` / `.cancel`)
-5. `MENTORING_APPLY` 성공 시 `calendar.invite.create` (mock) 후속 호출 — 실패해도 신청 롤백 안 함
-6. 신청/취소 직후 해당 사용자 `applications` 행 즉시 삭제
+5. 신청/취소 직후 해당 사용자 `applications` 행 즉시 삭제
 
 ### 3.4 에러 응답
 

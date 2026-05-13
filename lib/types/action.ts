@@ -11,14 +11,6 @@ export type ApplicationData = {
   sessionStartedAt?: string; // ISO 8601
 };
 
-export type CalendarInviteStatus = "created" | "skipped" | "failed";
-
-export type CalendarInviteData = {
-  status: CalendarInviteStatus;
-  eventId?: string;
-  errorMessage?: string;
-};
-
 export type ActionExecutionError = {
   code: string;
   message: string;
@@ -32,18 +24,16 @@ export type ActionResult = {
   message: string;
   data?: {
     application?: ApplicationData;
-    calendarInvite?: CalendarInviteData;
   };
   error?: ActionExecutionError;
   traceId?: string;
 };
 
-// 화면 렌더용 파생 톤. 캘린더 실패는 "부분 실패"로 강등.
-export type ActionResultTone = "success" | "partial" | "failed";
+// 화면 렌더용 파생 톤.
+export type ActionResultTone = "success" | "failed";
 
 export function deriveActionResultTone(result: ActionResult): ActionResultTone {
   if (result.status === "failed") return "failed";
-  if (result.data?.calendarInvite?.status === "failed") return "partial";
   return "success";
 }
 

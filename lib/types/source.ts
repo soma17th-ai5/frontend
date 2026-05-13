@@ -7,7 +7,6 @@ export type SourceType =
   | "application"
   | "webex_message"
   | "webex_summary"
-  | "calendar"
   | "other";
 
 export type Source = {
@@ -28,6 +27,5 @@ export const SOURCE_TYPE_LABEL: Record<SourceType, string> = {
   application: "접수 내역",
   webex_message: "Webex 메시지",
   webex_summary: "Webex 요약",
-  calendar: "캘린더",
   other: "참고 자료",
 };
