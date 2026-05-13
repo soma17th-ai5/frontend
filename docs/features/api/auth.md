@@ -270,4 +270,4 @@ FastAPI 표준 422 응답(`{ detail: [...] }`)도 `somaFetch`가 `INVALID_REQUES
 | A-2 | `role` 필드의 가능한 값 enum (`TRAINEE` / `OPERATOR` / `MENTOR` …) | Sidebar/권한 UI 분기 |
 | A-3 | 세션 TTL — 백엔드가 만료 정책을 명시하면 쿠키 `maxAge` 동기화 | 자동 로그아웃 타이밍 |
 | A-4 | `frontEndSpec §1.4`의 `X-Soma-Session-Expired: true` 헤더 실제 백엔드 지원 여부 | 만료 감지 신호 다양화 |
-| A-5 | `/auth/status`(통합 상태 확인) 엔드포인트 추가 여부 (`API.md §1.3` 참조) | 외부 연동(Webex/Calendar) 상태 표시 |
+| A-5 | `/auth/status`(통합 상태 확인) 엔드포인트 추가 여부 (`API.md §1.3` 참조) | 외부 연동(Webex) 상태 표시 |

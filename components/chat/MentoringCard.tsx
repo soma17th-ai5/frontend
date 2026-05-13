@@ -1,5 +1,4 @@
 import {
-  CalendarDays,
   CheckCircle2,
   Clock,
   Loader2,
@@ -192,7 +191,7 @@ export function MentoringCard({ card, status, onApply, onCancel }: Props) {
         </div>
 
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
+          <Clock className="h-3.5 w-3.5 text-slate-400" />
           <span>
             {formatMentoringSchedule(
               card.sessionStartedAt,

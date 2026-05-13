@@ -10,7 +10,10 @@ import { ApiError } from "@/lib/api";
 import { executeAction } from "@/lib/api/actions";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { useChatMessages } from "@/lib/contexts/ChatMessagesContext";
-import { applyMentoringViaApi } from "@/lib/mentoringApply";
+import {
+  applyMentoringViaApi,
+  cancelMentoringViaApi,
+} from "@/lib/mentoringApply";
 import {
   type MentoringCard,
   type MentoringStatus,
@@ -24,6 +27,7 @@ type Pending =
   | { actionType: "MENTORING_CANCEL"; card: MentoringCard };
 
 type LocalStatusMap = Record<string, MentoringCardLocalStatus>;
+type LocalCardMap = Record<string, MentoringCard>;
 
 const ACTION_COPY: Record<
   ActionType,
@@ -49,6 +53,14 @@ function buildInitialStatusMap(items: MentoringCard[]): LocalStatusMap {
   const map: LocalStatusMap = {};
   for (const item of items) {
     map[item.id] = item.status as MentoringCardLocalStatus;
+  }
+  return map;
+}
+
+function buildInitialCardMap(items: MentoringCard[]): LocalCardMap {
+  const map: LocalCardMap = {};
+  for (const item of items) {
+    map[item.id] = item;
   }
   return map;
 }
@@ -110,6 +122,9 @@ export function MentoringCardList({
   const [statusMap, setStatusMap] = useState<LocalStatusMap>(() =>
     buildInitialStatusMap(items),
   );
+  const [cardMap, setCardMap] = useState<LocalCardMap>(() =>
+    buildInitialCardMap(items),
+  );
   const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -137,57 +152,6 @@ export function MentoringCardList({
 
     try {
       if (applyMode === "openapi_mentoring") {
-        if (pending.actionType !== "MENTORING_APPLY") {
-          messagesCtx?.appendMessage({
-            id: `ar-${pending.card.id}-${Date.now()}`,
-            role: "agent",
-            kind: "action_result",
-            results: [
-              {
-                actionType: "MENTORING_CANCEL",
-                status: "failed",
-                message: "이 화면에서는 신청만 지원합니다. 취소는 OpenSoma에서 진행해 주세요.",
-                error: {
-                  code: "NOT_SUPPORTED",
-                  message: "RAG 카드에서 취소 미지원",
-                  recoverable: false,
-                },
-              },
-            ],
-          });
-          setStatusMap((prev) => ({
-            ...prev,
-            [pending.card.id]: pending.card.status as MentoringCardLocalStatus,
-          }));
-          return;
-        }
-
-        const mentoringId = Number.parseInt(pending.card.id, 10);
-        if (Number.isNaN(mentoringId)) {
-          messagesCtx?.appendMessage({
-            id: `ar-${pending.card.id}-${Date.now()}`,
-            role: "agent",
-            kind: "action_result",
-            results: [
-              {
-                actionType: "MENTORING_APPLY",
-                status: "failed",
-                message: "멘토링 ID를 확인할 수 없어 신청할 수 없습니다.",
-                error: {
-                  code: "INVALID_MENTORING_ID",
-                  message: "숫자 mentoring_id 가 아닙니다.",
-                  recoverable: false,
-                },
-              },
-            ],
-          });
-          setStatusMap((prev) => ({
-            ...prev,
-            [pending.card.id]: pending.card.status as MentoringCardLocalStatus,
-          }));
-          return;
-        }
-
         if (!user?.somaUserId) {
           messagesCtx?.appendMessage({
             id: `ar-${pending.card.id}-${Date.now()}`,
@@ -195,9 +159,9 @@ export function MentoringCardList({
             kind: "action_result",
             results: [
               {
-                actionType: "MENTORING_APPLY",
+                actionType: pending.actionType,
                 status: "failed",
-                message: "로그인 정보가 없어 신청할 수 없습니다.",
+                message: "로그인 정보가 없어 처리할 수 없습니다.",
                 error: {
                   code: "SOMA_AUTH_REQUIRED",
                   message: "다시 로그인해 주세요.",
@@ -213,14 +177,101 @@ export function MentoringCardList({
           return;
         }
 
-        const result = await applyMentoringViaApi(mentoringId, {
-          confirmed: true,
-          somaUserId: user.somaUserId,
-        });
+        let result: ActionResult;
+        if (pending.actionType === "MENTORING_APPLY") {
+          const mentoringId = Number.parseInt(pending.card.id, 10);
+          if (Number.isNaN(mentoringId)) {
+            messagesCtx?.appendMessage({
+              id: `ar-${pending.card.id}-${Date.now()}`,
+              role: "agent",
+              kind: "action_result",
+              results: [
+                {
+                  actionType: "MENTORING_APPLY",
+                  status: "failed",
+                  message: "멘토링 ID를 확인할 수 없어 신청할 수 없습니다.",
+                  error: {
+                    code: "INVALID_MENTORING_ID",
+                    message: "숫자 mentoring_id 가 아닙니다.",
+                    recoverable: false,
+                  },
+                },
+              ],
+            });
+            setStatusMap((prev) => ({
+              ...prev,
+              [pending.card.id]: pending.card.status as MentoringCardLocalStatus,
+            }));
+            return;
+          }
+
+          result = await applyMentoringViaApi(mentoringId, {
+            somaUserId: user.somaUserId,
+            title: pending.card.title,
+          });
+        } else {
+          if (!pending.card.applySn || !pending.card.qustnrSn) {
+            messagesCtx?.appendMessage({
+              id: `ar-${pending.card.id}-${Date.now()}`,
+              role: "agent",
+              kind: "action_result",
+              results: [
+                {
+                  actionType: "MENTORING_CANCEL",
+                  status: "failed",
+                  message: "신청 번호를 확인할 수 없어 취소할 수 없습니다.",
+                  error: {
+                    code: "MISSING_APPLICATION_IDS",
+                    message: "apply_sn 또는 qustnr_sn이 없습니다.",
+                    recoverable: false,
+                  },
+                },
+              ],
+            });
+            setStatusMap((prev) => ({
+              ...prev,
+              [pending.card.id]: pending.card.status as MentoringCardLocalStatus,
+            }));
+            return;
+          }
+
+          result = await cancelMentoringViaApi({
+            applySn: pending.card.applySn,
+            qustnrSn: pending.card.qustnrSn,
+            somaUserId: user.somaUserId,
+          });
+        }
 
         if (result.status === "success") {
           const finalStatus = nextStatusAfterSuccess(pending.actionType);
           setStatusMap((prev) => ({ ...prev, [pending.card.id]: finalStatus }));
+          setCardMap((prev) => {
+            const current = prev[pending.card.id] ?? pending.card;
+            if (pending.actionType === "MENTORING_APPLY") {
+              const application = result.data?.application;
+              return {
+                ...prev,
+                [pending.card.id]: {
+                  ...current,
+                  status: "applied",
+                  ...(application
+                    ? {
+                        applySn: application.applySn,
+                        qustnrSn: application.qustnrSn,
+                      }
+                    : {}),
+                },
+              };
+            }
+
+            const next: MentoringCard = { ...current, status: "open" };
+            delete next.applySn;
+            delete next.qustnrSn;
+            return {
+              ...prev,
+              [pending.card.id]: next,
+            };
+          });
         } else {
           setStatusMap((prev) => ({
             ...prev,
@@ -286,8 +337,8 @@ export function MentoringCardList({
           <p className="font-medium text-slate-800">{pending.card.title}</p>
           <p className="text-xs text-slate-500">
             {pending.actionType === "MENTORING_APPLY"
-              ? "확인을 누르면 OpenSoma에 신청 요청이 전송되고, Google Calendar에 일정이 추가됩니다."
-              : "확인을 누르면 OpenSoma에서 신청이 취소되고 캘린더 일정도 함께 정리됩니다."}
+              ? "확인을 누르면 OpenSoma에 신청 요청이 전송됩니다."
+              : "확인을 누르면 OpenSoma에서 신청이 취소됩니다."}
           </p>
         </div>
       ),
@@ -297,16 +348,19 @@ export function MentoringCardList({
   return (
     <div className="space-y-3">
       <ul className="space-y-3">
-        {items.map((card) => (
-          <li key={card.id}>
-            <MentoringCardComponent
-              card={card}
-              status={statusMap[card.id] ?? "open"}
-              onApply={handleApply}
-              onCancel={handleCancelClick}
-            />
-          </li>
-        ))}
+        {items.map((item) => {
+          const card = cardMap[item.id] ?? item;
+          return (
+            <li key={card.id}>
+              <MentoringCardComponent
+                card={card}
+                status={statusMap[card.id] ?? card.status}
+                onApply={handleApply}
+                onCancel={handleCancelClick}
+              />
+            </li>
+          );
+        })}
       </ul>
 
       {pending && dialogCopy && (

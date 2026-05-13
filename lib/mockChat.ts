@@ -5,5 +5,5 @@ export const MOCK_HISTORY = [
   { id: "h-2", title: "이번 주 공지 요약", date: "오늘" },
   { id: "h-3", title: "Webex ‘배포’ 검색", date: "어제" },
   { id: "h-4", title: "프론트 멘토링 일정", date: "4월 28일" },
-  { id: "h-5", title: "Google Calendar 연결", date: "4월 25일" },
+  { id: "h-5", title: "지원금 공지 확인", date: "4월 25일" },
 ];

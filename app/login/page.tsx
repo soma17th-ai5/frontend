@@ -3,9 +3,9 @@
 import {
   ArrowRight,
   Bot,
-  CalendarCheck,
   Loader2,
   MessagesSquare,
+  Send,
   Sparkles,
   TriangleAlert,
 } from "lucide-react";
@@ -15,9 +15,9 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 
 const FEATURE_BULLETS = [
   {
-    icon: CalendarCheck,
-    title: "멘토링·일정",
-    description: "Google Calendar와 연동해 신청부터 알림까지 자동으로 처리합니다.",
+    icon: Send,
+    title: "멘토링 신청",
+    description: "대화 중 찾은 멘토링을 바로 확인하고 신청할 수 있습니다.",
   },
   {
     icon: MessagesSquare,

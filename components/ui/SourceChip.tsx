@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CalendarDays,
   ExternalLink,
   FileText,
   Inbox,
@@ -29,7 +28,6 @@ const TYPE_ICON: Record<SourceType, LucideIcon> = {
   application: Inbox,
   webex_message: MessagesSquare,
   webex_summary: MessagesSquare,
-  calendar: CalendarDays,
   other: Link2,
 };
 
